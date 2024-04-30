@@ -1,12 +1,17 @@
 package guru.springframework.spring6ai.services;
 
 import guru.springframework.spring6ai.models.Answer;
+import guru.springframework.spring6ai.models.GetCapitalRequest;
 import guru.springframework.spring6ai.models.Question;
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
 
 @Service
 public class OpenAIServiceImpl implements OpenAIService {
@@ -16,6 +21,9 @@ public class OpenAIServiceImpl implements OpenAIService {
     public OpenAIServiceImpl(ChatClient chatClient) {
         this.chatClient = chatClient;
     }
+
+    @Value("classpath:templates/get_capital_prompt.st")
+    private Resource getCapitalPrompt;
 
     @Override
     public String getAnswer(String question) {
@@ -29,5 +37,14 @@ public class OpenAIServiceImpl implements OpenAIService {
     @Override
     public Answer getAnswer(Question question) {
         return new Answer(question.question());
+    }
+
+    @Override
+    public Answer getCapital(GetCapitalRequest capitalRequest) {
+        PromptTemplate promptTemplate = new PromptTemplate(getCapitalPrompt);
+        Prompt prompt = promptTemplate.create(Map.of("country", capitalRequest.country()));
+        ChatResponse response = chatClient.call(prompt);
+
+        return new Answer(response.getResult().getOutput().getContent());
     }
 }
