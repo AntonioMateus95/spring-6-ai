@@ -1,15 +1,15 @@
 package guru.springframework.spring6ai.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import guru.springframework.spring6ai.models.Answer;
 import guru.springframework.spring6ai.models.GetCapitalRequest;
+import guru.springframework.spring6ai.models.GetCapitalResponse;
 import guru.springframework.spring6ai.models.Question;
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.parser.BeanOutputParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -50,21 +50,15 @@ public class OpenAIServiceImpl implements OpenAIService {
     }
 
     @Override
-    public Answer getCapital(GetCapitalRequest capitalRequest) {
+    public GetCapitalResponse getCapital(GetCapitalRequest capitalRequest) {
+        BeanOutputParser<GetCapitalResponse> parser = new BeanOutputParser<>(GetCapitalResponse.class);
+        String format = parser.getFormat();
+
         PromptTemplate promptTemplate = new PromptTemplate(getCapitalPrompt);
-        Prompt prompt = promptTemplate.create(Map.of("country", capitalRequest.country()));
+        Prompt prompt = promptTemplate.create(Map.of("country", capitalRequest.country(), "format", format));
         ChatResponse response = chatClient.call(prompt);
 
-        System.out.println(response.getResult().getOutput().getContent());
-        String responseString;
-        try {
-            JsonNode jsonNode = objectMapper.readTree(response.getResult().getOutput().getContent());
-            responseString = jsonNode.get("answer").asText();
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-
-        return new Answer(responseString);
+        return parser.parse(response.getResult().getOutput().getContent());
     }
 
     @Override

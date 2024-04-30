@@ -1,1 +1,1 @@
-What is the capital of {country}? Respond in JSON with the name of the state in a property named `answer`.
+What is the capital of {country}? {format}
